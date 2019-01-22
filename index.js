@@ -27,8 +27,10 @@ server.get('/users/:id', (req, res) => {
 });
 
 server.post('/users', (req, res) => {
-    if (!req.body.name) return res.status(400).json({ error: 'Request body must include new user\'s name.' });
-    user.insert({ name: req.body.name })
+    const name = req.body.name;
+    if (!name) return res.status(400).json({ error: 'Request body must include \'name\' key for new user.' });
+    if (name.length > 128) return res.status(400).json({ error: 'New user\'s name must be 128 characters or less.' });
+    user.insert({ name })
         .then(result => {
             user.get(result.id)
                 .then(user => res.status(201).json(user))
