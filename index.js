@@ -81,7 +81,7 @@ server.get('/posts/:id', (req, res) => {
 });
 
 server.post('/posts', (req, res) => {
-    const [userId, text] = [req.body.userId, req.body.text];
+    const [userId, text] = [Number(req.body.userId), req.body.text];
     if (!userId || !text) return res.status(400).json({ error: 'Please provide both an existing user ID and text content for post.' });
     user.get(userId)
         .then(user => {
@@ -121,6 +121,13 @@ server.delete('/posts/:id', (req, res) => {
         })
         .catch(err => res.status(500).json({ error: 'Error occurred while attempting to delete post.' }));
 });
+
+server.get('/users/:id/posts', (req, res) => {
+    const id = Number(req.params.id);
+    post.get()
+        .then(posts => res.json({ posts: posts.filter(x => x.userId === id) }))
+        .catch(err => res.status(500).json({ error: 'Error occurred while retrieving user\'s posts' }));
+})
 
 server.listen(5000, () => {
     console.log(`Server listening on port ${port}.`);
