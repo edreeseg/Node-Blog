@@ -19,11 +19,13 @@ server.get('/users/:id', (req, res) => {
     const id = req.params.id;
     if (Number.isNaN(Number(id))) return res.status(400).json({ error: 'Please enter ID in the form of a number' });
     user.get(id)
-        .then(user => {
-            if (!user) res.status(404).json({ error: 'Provided ID is not associated with any user.' });
-            else res.json(user);
-        })
-        .catch(err => res.status(500).json({ error: 'There was an error while trying to retrieve user\'s information' }) );
+        .then(user => user ? res.json(user) : Promise.reject(404))
+        .catch(err => {
+            if (err === 404)
+                res.status(404).json({ error: 'Provided ID is not associated with any user.' });
+            else
+                res.status(500).json({ error: 'There was an error while trying to retrieve user\'s information' });
+    });
 });
 
 server.post('/users', (req, res) => {
@@ -31,11 +33,8 @@ server.post('/users', (req, res) => {
     if (!name) return res.status(400).json({ error: 'Request body must include \'name\' key for new user.' });
     if (name.length > 128) return res.status(400).json({ error: 'New user\'s name must be 128 characters or less.' });
     user.insert({ name })
-        .then(result => {
-            user.get(result.id)
-                .then(user => res.status(201).json(user))
-                .catch(err => res.status(500).json({ error: 'There was an error while trying to respond with added user\'s information.'}));
-        })
+        .then(result => user.get(result.id))
+        .then(user => res.status(201).json(user))
         .catch(err => res.status(500).json({ error: 'There was an error while trying to add new user.' }));
 });
 
@@ -45,24 +44,23 @@ server.put('/users/:id', (req, res) => {
     if (!req.body.name) return res.status(400).json({ error: 'Please enter name value for update.' });
     if (Object.keys(req.body).length > 1) return res.status(400).json({ error: 'Please only provide name value to update.' });
     user.update(id, req.body)
-        .then(n => {
-            user.get(id)
-                .then(user => res.json(user))
-                .catch(err => res.status(500).json({ error: 'There was an error after updating user information.' }));
-        })
-        .catch(err => res.status(500).json({ error: err }));
+        .then(n => user.get(id))
+        .then(user => res.json(user))
+        .catch(err => res.status(500).json({ error: 'There was an error while trying to update user information.' }));
 });
 
 server.delete('/users/:id', (req, res) => {
     const id = req.params.id;
     if (Number.isNaN(Number(id))) return res.status(400).json({ error: 'Please enter ID in the form of a number' });
     user.remove(id)
-        .then(n => {
-            user.get()
-                .then(users => n == 1 ? res.json({ users }) : res.status(404).json({ error: 'No user by that ID found.' }))
-                .catch(err => res.status(500).json({ error: 'There was an error after deleting user.' }));
-        })
-        .catch(err => res.status(500).json({ error: 'There was an error while trying to delete user.' }));
+        .then(n => n == 1 ? user.get() : Promise.reject(404))
+        .then(users => res.json({ users }))
+        .catch(err => {
+            if (err === 404)
+                res.status(404).json({ error: 'No user found with provided ID.' });
+            else
+                res.status(500).json({ error: 'There was an error while trying to delete user.' })
+    });
 });
 
 server.get('/posts', (req, res) => {
@@ -84,42 +82,42 @@ server.post('/posts', (req, res) => {
     const [userId, text] = [Number(req.body.userId), req.body.text];
     if (!userId || !text) return res.status(400).json({ error: 'Please provide both an existing user ID and text content for post.' });
     user.get(userId)
-        .then(user => {
-            if (!user) return res.status(404).json({ error: 'No user associated with provided user ID.' });
-            post.insert({ userId, text })
-                .then(info => {
-                    post.get(info.id)
-                        .then(post => res.status(201).json(post))
-                        .catch(err => res.status(500).json({ error: 'Error occurred after adding post.' }));
-                })
-                .catch(err => res.status(500).json({ error: 'Error occurred while adding post.' }));
-        })
-        .catch(err => res.status(500).json({ error: 'Error occured while retrieving user infromation.' }));
+        .then(user => user ? post.insert({ userId, text }) : Promise.reject(404))
+        .then(info => post.get(info.id))
+        .then(post => res.status(201).json(post))
+        .catch(err => {
+            if (err === 404)
+                res.status(404).json({ error: 'No user found with provided userId.' });
+            else
+                res.status(500).json({ error: 'Error occured while retrieving user infromation.' });
+        });
 });
 
 server.put('/posts/:id', (req, res) => {
     const id = req.params.id;
     if (Object.keys(req.body).some(key => key !== 'text')) return res.status(400).json({ error: 'Request body must only include updated text value.' });
     post.update(id, req.body)
-        .then(n => {
-            if (!n) return res.status(404).json({ error: 'Could not find post by provided ID.' });
-            post.get(id)
-                .then(post => res.json(post))
-                .catch(err => res.status(500).json({ error: 'Error occurred after updating post.' }));
-        })
-        .catch(err => res.status(500).json({ error: 'Error occurred while updating post.' }));
+        .then(n => n ? post.get(id) : Promise.reject(404))
+        .then(post => res.json(post))
+        .catch(err => {
+            if (err === 404)
+                res.status(404).json({ error: 'No post by provided ID found.' });
+            else 
+                res.status(500).json({ error: 'Error occurred while updating post.' });
+    });
 });
 
 server.delete('/posts/:id', (req, res) => {
     const id = req.params.id;
     post.remove(id)
-        .then(n => {
-            if (!n) return res.status(404).json({ error: 'Could not find post by provided ID.' });
-            post.get()
-                .then(posts => res.json({ posts }))
-                .catch(err => res.status(500).json({ error: 'Error occurred after deleting post.' }));
-        })
-        .catch(err => res.status(500).json({ error: 'Error occurred while attempting to delete post.' }));
+        .then(n => n ? post.get() : Promise.reject(404))
+        .then(posts => res.json({ posts }))
+        .catch(err => {
+            if (err === 404)
+                res.status(404).json({ error: 'No post with that ID found.' });
+            else
+                res.status(500).json({ error: 'Error occurred while attempting to delete post.' });
+    });
 });
 
 server.get('/users/:id/posts', (req, res) => {
