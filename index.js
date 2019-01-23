@@ -9,10 +9,20 @@ server.use(express.json());
 
 const port = 5000;
 
+const upperMiddleware = (req, res, next) => {
+    if (req.body.name){
+        if (req.method === 'POST' || req.method === 'PUT')
+            req.body.name = req.body.name.toUpperCase();
+    }
+    next();
+}
+
+server.use(upperMiddleware);
+
 server.get('/users', (req, res) => {
     user.get()
         .then(users => res.json({ users }))
-        .catch(err => console.log(err));
+        .catch(err => res.status(500).json({ error: 'There was an error while retrieving users.'}));
 });
 
 server.get('/users/:id', (req, res) => {
