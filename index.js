@@ -132,8 +132,8 @@ server.delete('/posts/:id', (req, res) => {
 
 server.get('/users/:id/posts', (req, res) => {
     const id = Number(req.params.id);
-    post.get()
-        .then(posts => res.json({ posts: posts.filter(x => x.userId === id) }))
+    user.getUserPosts(id)
+        .then(posts => res.json({ posts }))
         .catch(err => res.status(500).json({ error: 'Error occurred while retrieving user\'s posts' }));
 })
 
