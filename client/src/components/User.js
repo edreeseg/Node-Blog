@@ -18,7 +18,7 @@ class User extends React.Component {
   }
   render() {
     return (
-      <div>
+      <div className="post-list">
         {this.state.posts.map(post => (
           <Post key={post.id} data={post} />
         ))}

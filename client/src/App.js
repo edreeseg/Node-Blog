@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { Route } from 'react-router-dom';
+import { Route, Link } from 'react-router-dom';
 import axios from 'axios';
 import UserList from './components/UserList';
 import User from './components/User';
@@ -21,7 +21,11 @@ class App extends Component {
   render() {
     return (
       <>
-        <header className="top-bar" />
+        <header className="top-bar">
+          <Link to="/">
+            <span className="fas fa-home logo" />
+          </Link>
+        </header>
         <Route
           exact
           path="/"
