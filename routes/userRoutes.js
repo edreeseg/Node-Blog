@@ -94,10 +94,12 @@ router.delete('/:id', (req, res) => {
     .catch(err => {
       if (err === 404)
         res.status(404).json({ error: 'No user found with provided ID.' });
-      else
+      else {
+        console.log(err);
         res
           .status(500)
           .json({ error: 'There was an error while trying to delete user.' });
+      }
     });
 });
 

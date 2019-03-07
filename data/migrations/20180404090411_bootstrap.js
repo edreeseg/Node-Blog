@@ -5,7 +5,6 @@ exports.up = function(knex) {
     .then(createPostTagsTable)
     .catch(error => {
       console.log(error);
-      reject(error);
     });
 };
 
@@ -54,13 +53,13 @@ function createPostsTable(knex) {
       .createTable('posts', function(posts) {
         posts.increments();
         posts.text('text').notNullable();
-
         posts
           .integer('userId')
           .unsigned()
           .notNullable()
           .references('id')
-          .inTable('users');
+          .inTable('users')
+          .onDelete('CASCADE');
 
         console.log('posts table created');
         resolve(knex);
@@ -100,13 +99,15 @@ function createPostTagsTable(knex) {
           .unsigned()
           .notNullable()
           .references('id')
-          .inTable('posts');
+          .inTable('posts')
+          .onDelete('CASCADE');
         posttags
           .integer('tagId')
           .unsigned()
           .notNullable()
           .references('id')
-          .inTable('tags');
+          .inTable('tags')
+          .onDelete('CASCADE');
 
         console.log('posttags table created');
         resolve(knex);
